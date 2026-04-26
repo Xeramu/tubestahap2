@@ -27,11 +27,11 @@ pipeline {
                 bat 'docker compose build'
             }
         }
-
+        
         stage('Functional Test') {
             steps {
                 bat 'docker compose up -d'
-                bat 'cd order-service && go test -tags=functional -v'
+                bat 'docker compose exec order-service go test -tags=functional -v'
             }
         }
         
