@@ -10,6 +10,9 @@
 // ganti semua localhost jadi user-service/ order-service
 // portnya msh sama. 8081 atau 8083
 
+//go:build functional
+// +build functional
+
 package main
 
 import (
