@@ -8,69 +8,53 @@ pipeline {
 
     stages {
 
-        stage('Checkout Repo') {
-            steps {
-                git 'https://github.com/Xeramu/tubestahap2.git'
-            }
-        }
-
         stage('Unit Test') {
             steps {
-                dir('user-service') {
-                    sh 'go test -v'
-                }
-
-                dir('order-service') {
-                    sh 'go test -v'
-                }
+                bat 'cd user-service && go test -v'
+                bat 'cd order-service && go test -v'
             }
         }
 
         stage('Lint / Vet') {
             steps {
-                dir('user-service') {
-                    sh 'go vet ./...'
-                }
-
-                dir('order-service') {
-                    sh 'go vet ./...'
-                }
+                bat 'cd user-service && go vet ./...'
+                bat 'cd order-service && go vet ./...'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker compose build'
+                bat 'docker compose build'
             }
         }
 
         stage('Functional Test') {
             steps {
-                sh 'docker compose up -d'
-                sh 'docker compose exec order-service go test -v'
+                bat 'docker compose up -d'
+                bat 'docker compose exec order-service go test -v'
             }
         }
 
         stage('Push Image') {
             steps {
-                sh 'docker tag tubestahap2-user-service ${DOCKER_USER}/user-service:latest'
-                sh 'docker tag tubestahap2-order-service ${DOCKER_USER}/order-service:latest'
+                bat 'docker tag tubestahap2-user-service %DOCKER_USER%/user-service:latest'
+                bat 'docker tag tubestahap2-order-service %DOCKER_USER%/order-service:latest'
 
-                sh 'docker push ${DOCKER_USER}/user-service:latest'
-                sh 'docker push ${DOCKER_USER}/order-service:latest'
+                bat 'docker push %DOCKER_USER%/user-service:latest'
+                bat 'docker push %DOCKER_USER%/order-service:latest'
             }
         }
 
         stage('Deploy Kubernetes') {
             steps {
-                sh 'kubectl apply -f k8s/'
+                bat 'kubectl apply -f k8s/'
             }
         }
 
         stage('Verify') {
             steps {
-                sh 'kubectl get pods'
-                sh 'kubectl get svc'
+                bat 'kubectl get pods'
+                bat 'kubectl get svc'
             }
         }
     }
