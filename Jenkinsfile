@@ -31,10 +31,10 @@ pipeline {
         stage('Functional Test') {
             steps {
                 bat 'docker compose up -d'
-                bat 'docker compose exec order-service go test -v'
+                bat 'cd order-service && go test -tags=functional -v'
             }
         }
-
+        
         stage('Push Image') {
             steps {
                 bat 'docker tag tubestahap2-user-service %DOCKER_USER%/user-service:latest'
