@@ -1,33 +1,73 @@
 //go:build functional
-// +build functional
 
 package main
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"testing"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql"
+)
+
+// ===============================
+// CONFIG
+// ===============================
+// Kalau docker compose:
+// host = mysql
+//
+// Kalau lokal:
+// host = localhost
+//
+// Sesuaikan kalau perlu.
+const (
+	dbUser = "root"
+	dbPass = "root"
+	dbHost = "mysql"
+	dbPort = "3306"
+	dbName = "tubesdb"
 )
 
 func TestCreateOrder_Functional(t *testing.T) {
 
+	// ==================================
+	// 1. CEK DATABASE BISA DIAKSES
+	// ==================================
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
+		dbUser, dbPass, dbHost, dbPort, dbName)
+
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		t.Fatal("database tidak bisa diakses:", err)
+	}
+
+	t.Log("DATABASE CONNECTED")
+
+	// ==================================
+	// 2. START ORDER SERVICE LOKAL
+	// ==================================
 	go func() {
 		http.HandleFunc("/order", createOrderHandler)
 		http.ListenAndServe(":8083", nil)
-
 	}()
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 
-	// email unik biar tidak bentrok
+	// ==================================
+	// 3. REGISTER USER
+	// ==================================
 	email := fmt.Sprintf("func%d@mail.com", time.Now().UnixNano())
 
-	// ====================
-	// REGISTER
-	// ====================
 	respReg, err := http.Post(
 		"http://user-service:8081/register",
 		"application/json",
@@ -48,9 +88,9 @@ func TestCreateOrder_Functional(t *testing.T) {
 
 	userID := int(reg["user_id"].(float64))
 
-	// ====================
-	// LOGIN
-	// ====================
+	// ==================================
+	// 4. LOGIN
+	// ==================================
 	respLogin, err := http.Post(
 		"http://user-service:8081/login",
 		"application/json",
@@ -69,29 +109,9 @@ func TestCreateOrder_Functional(t *testing.T) {
 
 	token := login["token"]
 
-	// ====================
-	// TEST PROFILE DIRECT
-	// ====================
-	t.Log("Testing profile directly...")
-
-	reqCheck, _ := http.NewRequest(
-		"GET",
-		fmt.Sprintf("http://user-service:8081/profile?id=%d", userID),
-		nil,
-	)
-
-	reqCheck.Header.Set("Authorization", "Bearer "+token)
-
-	respCheck, err := http.DefaultClient.Do(reqCheck)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Log("PROFILE STATUS DIRECT:", respCheck.StatusCode)
-
-	// ====================
-	// CREATE ORDER
-	// ====================
+	// ==================================
+	// 5. CREATE ORDER
+	// ==================================
 	body := []byte(fmt.Sprintf(`{
 		"user_id":%d,
 		"nama_barang":"Laptop",
@@ -120,18 +140,28 @@ func TestCreateOrder_Functional(t *testing.T) {
 	var result map[string]interface{}
 	json.NewDecoder(resp.Body).Decode(&result)
 
-	t.Log("REGISTER:", reg)
-	t.Log("USER ID:", userID)
-	t.Log("TOKEN:", token)
-	t.Log("ORDER RESPONSE:", result)
-	t.Log("STATUS:", resp.StatusCode)
-
 	if resp.StatusCode != 200 {
 		t.Fatalf("failed: %+v", result)
 	}
 
-	if result["status"] != "created" {
-		t.Fatalf("unexpected response: %+v", result)
+	// ==================================
+	// 6. CEK DATA MASUK KE DATABASE
+	// ==================================
+	var count int
+
+	err = db.QueryRow(
+		"SELECT COUNT(*) FROM orders WHERE user_id = ?",
+		userID,
+	).Scan(&count)
+
+	if err != nil {
+		t.Fatal(err)
 	}
 
+	if count < 1 {
+		t.Fatal("data order tidak masuk database")
+	}
+
+	t.Log("ORDER MASUK DATABASE")
+	t.Log("FUNCTIONAL TEST SUCCESS")
 }
