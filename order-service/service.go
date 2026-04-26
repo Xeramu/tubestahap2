@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -23,29 +24,38 @@ type Validator interface {
 type RealValidator struct{}
 
 func (v RealValidator) CheckUser(userID int, token string) bool {
-	req, _ := http.NewRequest(
+	if userID <= 0 {
+		return false
+	}
+
+	if strings.TrimSpace(token) == "" {
+		return false
+	}
+
+	req, err := http.NewRequest(
 		"GET",
 		fmt.Sprintf("%s/profile?id=%d", UserServiceURL, userID),
 		nil,
 	)
+	if err != nil {
+		return false
+	}
 
 	req.Header.Set("Authorization", "Bearer "+token)
 
 	client := &http.Client{Timeout: 3 * time.Second}
 	resp, err := client.Do(req)
-
 	if err != nil {
 		fmt.Println("PROFILE ERROR:", err)
 		return false
 	}
+	defer resp.Body.Close()
 
-	fmt.Println("PROFILE STATUS:", resp.StatusCode)
-
-	return resp.StatusCode == 200
+	return resp.StatusCode == http.StatusOK
 }
 
 func GenerateResi() string {
-	return fmt.Sprintf("LNG-%d", time.Now().Unix())
+	return fmt.Sprintf("LNG-%d", time.Now().UnixNano())
 }
 
 func CalculateETA() string {
@@ -53,13 +63,28 @@ func CalculateETA() string {
 }
 
 func CreateOrder(req Order, token string, v Validator) (Order, error) {
+	if v == nil {
+		return Order{}, errors.New("validator required")
+	}
 
 	if !v.CheckUser(req.UserID, token) {
 		return Order{}, errors.New("user invalid")
 	}
 
+	if strings.TrimSpace(req.NamaBarang) == "" {
+		return Order{}, errors.New("nama barang required")
+	}
+
 	if req.Berat <= 0 {
 		return Order{}, errors.New("invalid weight")
+	}
+
+	if strings.TrimSpace(req.AlamatPengirim) == "" {
+		return Order{}, errors.New("alamat pengirim required")
+	}
+
+	if strings.TrimSpace(req.AlamatPenerima) == "" {
+		return Order{}, errors.New("alamat penerima required")
 	}
 
 	req.OrderID = nextID
@@ -74,15 +99,20 @@ func CreateOrder(req Order, token string, v Validator) (Order, error) {
 }
 
 func GetOrder(id int) *Order {
-	for _, o := range orders {
-		if o.OrderID == id {
-			return &o
+	for i := range orders {
+		if orders[i].OrderID == id {
+			return &orders[i]
 		}
 	}
 	return nil
 }
 
 func UpdateOrderStatus(id int, status string) bool {
+	status = strings.TrimSpace(status)
+	if status == "" {
+		return false
+	}
+
 	for i := range orders {
 		if orders[i].OrderID == id {
 			orders[i].Status = status
