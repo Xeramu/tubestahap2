@@ -1,15 +1,3 @@
-// !!!!!!!!!!!WARNING!!!!!!!!!!!!!
-// !!!!!!!!!!!WARNING!!!!!!!!!!!!!
-// !!!!!!!!!!!WARNING!!!!!!!!!!!!!
-
-// Kalau mau tes lokal pake localhost,
-// ganti semua user-service/ order-service jadi localhost
-// portnya msh sama. 8081 atau 8083
-
-// Kalau mau tes lokal pake docker,
-// ganti semua localhost jadi user-service/ order-service
-// portnya msh sama. 8081 atau 8083
-
 //go:build functional
 // +build functional
 
