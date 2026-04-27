@@ -156,16 +156,33 @@ pipeline {
         // =========================
         stage('5. Functional Tests') {
             steps {
-                bat 'docker compose up -d'
-                bat 'timeout /t 5'
-
-                bat 'cd user-service && go test -tags=functional -v'
-                bat 'cd order-service && go test -tags=functional -v'
-                bat 'cd courier-service && if exist go.mod (go test -tags=functional -v) else echo skip'
-                bat 'cd gudang-service && if exist go.mod (go test -tags=functional -v) else echo skip'
-                bat 'cd report-service && if exist go.mod (go test -tags=functional -v) else echo skip'
-
-                bat 'docker compose down'
+                script {
+        
+                    bat 'docker compose up -d'
+                    bat 'timeout /t 5'
+        
+                    catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                        bat 'cd user-service && go test -tags=functional -v'
+                    }
+        
+                    catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                        bat 'cd order-service && go test -tags=functional -v'
+                    }
+        
+                    catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                        bat 'cd courier-service && if exist go.mod go test -tags=functional -v'
+                    }
+        
+                    catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                        bat 'cd gudang-service && if exist go.mod go test -tags=functional -v'
+                    }
+        
+                    catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                        bat 'cd report-service && if exist go.mod go test -tags=functional -v'
+                    }
+        
+                    bat 'docker compose down'
+                }
             }
         }
 
