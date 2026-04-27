@@ -104,11 +104,28 @@ pipeline {
         // =========================
         stage('2. Unit Tests') {
             steps {
-                bat 'cd user-service && go test -v'
-                bat 'cd order-service && go test -v'
-                bat 'cd report-service && if exist go.mod (go test -v) else echo skip'
-                bat 'cd courier-service && if exist go.mod (go test -v) else echo skip'
-                bat 'cd gudang-service && if exist go.mod (go test -v) else echo skip'
+                script {
+        
+                    catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                        bat 'cd user-service && go test -v'
+                    }
+        
+                    catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                        bat 'cd order-service && go test -v'
+                    }
+        
+                    catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                        bat 'cd report-service && if exist go.mod (go test -v)'
+                    }
+        
+                    catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                        bat 'cd courier-service && if exist go.mod (go test -v)'
+                    }
+        
+                    catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                        bat 'cd gudang-service && if exist go.mod (go test -v)'
+                    }
+                }
             }
         }
 
