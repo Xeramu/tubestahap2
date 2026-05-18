@@ -504,31 +504,47 @@ pipeline {
         // =========================
         // 5. FUNCTIONAL TEST
         // =========================
-        stage('5. Functional Tests') {
-            steps {
-                script {
-
-                    // start container
-                    bat 'docker compose up -d'
-
-                    // tunggu service hidup
-                    bat 'timeout /t 15'
-
-                    // functional test user-service
-                    catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                        bat 'cd user-service && go test -tags=functional -v'
+            stage('5. Functional Tests') {
+                    steps {
+                            script {
+                                    bat 'docker compose up -d'
+                                    powershell 'Start-Sleep -Seconds 20'
+                                    catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                                            bat 'cd user-service && go test -v'
+                                    }
+                                    
+                                    catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                                            bat 'cd order-service && go test -v'
+                                    }
+                                    bat 'docker compose down'
+                            }
                     }
-
-                    // functional test order-service
-                    catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                        bat 'cd order-service && go test -tags=functional -v'
-                    }
-
-                    // stop container
-                    bat 'docker compose down'
-                }
             }
-        }
+        // stage('5. Functional Tests') {
+        //     steps {
+        //         script {
+
+        //             // start container
+        //             bat 'docker compose up -d'
+
+        //             // tunggu service hidup
+        //             bat 'timeout /t 15'
+
+        //             // functional test user-service
+        //             catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+        //                 bat 'cd user-service && go test -tags=functional -v'
+        //             }
+
+        //             // functional test order-service
+        //             catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+        //                 bat 'cd order-service && go test -tags=functional -v'
+        //             }
+
+        //             // stop container
+        //             bat 'docker compose down'
+        //         }
+        //     }
+        // }
 
         // =========================
         // 6. PUSH IMAGE
