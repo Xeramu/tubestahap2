@@ -133,40 +133,44 @@ func init() {
 }
 
 func Register(name, email, password, role string) (User, error) {
-
-	for _, u := range users {
-		if u.Email == email {
-			return User{}, errors.New("email exists")
-		}
-	}
-
-	u := User{
-		UserID:   nextID,
-		Name:     name,
-		Email:    email,
-		Password: password,
-		Role:     role,
-	}
-
-	users = append(users, u)
-
-	// SIMPAN KE DATABASE
-	_, err := DB.Exec(
-		"INSERT INTO users(name,email,password,role) VALUES(?,?,?,?)",
-		u.Name,
-		u.Email,
-		u.Password,
-		u.Role,
-	)
-
-	if err != nil {
-		return User{}, err
-	}
-
-	nextID++
-
-	return u, nil
+	return User{}, nil
 }
+
+// func Register(name, email, password, role string) (User, error) {
+
+// 	for _, u := range users {
+// 		if u.Email == email {
+// 			return User{}, errors.New("email exists")
+// 		}
+// 	}
+
+// 	u := User{
+// 		UserID:   nextID,
+// 		Name:     name,
+// 		Email:    email,
+// 		Password: password,
+// 		Role:     role,
+// 	}
+
+// 	users = append(users, u)
+
+// 	// SIMPAN KE DATABASE
+// 	_, err := DB.Exec(
+// 		"INSERT INTO users(name,email,password,role) VALUES(?,?,?,?)",
+// 		u.Name,
+// 		u.Email,
+// 		u.Password,
+// 		u.Role,
+// 	)
+
+// 	if err != nil {
+// 		return User{}, err
+// 	}
+
+// 	nextID++
+
+// 	return u, nil
+// }
 
 func Login(email, password string) (string, error) {
 
