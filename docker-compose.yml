@@ -1,13 +1,40 @@
+# services:
+
+#   user-service:
+#     build: ./user-service
+#     ports:
+#       - "8081:8081"
+
+#   order-service:
+#     build: ./order-service
+#     ports:
+#       - "8083:8083"
+#     depends_on:
+#       - user-service
+
+
+
 services:
+
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: tubesdb
+    ports:
+      - "3307:3306"
 
   user-service:
     build: ./user-service
     ports:
       - "8081:8081"
+    depends_on:
+      - mysql
 
   order-service:
     build: ./order-service
     ports:
       - "8083:8083"
     depends_on:
+      - mysql
       - user-service
