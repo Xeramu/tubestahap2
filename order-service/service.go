@@ -223,54 +223,57 @@ func CalculateETA() string {
 }
 
 func CreateOrder(req Order, token string, v Validator) (Order, error) {
-
-	if req.Berat <= 0 {
-		return Order{}, errors.New("invalid berat")
-	}
-
-	req.OrderID = nextID
-	req.Resi = GenerateResi()
-	req.Status = "created"
-	req.ETA = CalculateETA()
-
-	orders = append(orders, req)
-
-	// SIMPAN KE DATABASE
-	_, err := DB.Exec(`
-		INSERT INTO orders(
-			user_id,
-			resi,
-			nama_barang,
-			berat,
-			dimensi,
-			jenis,
-			alamat_pengirim,
-			alamat_penerima,
-			status,
-			eta
-		)
-		VALUES(?,?,?,?,?,?,?,?,?,?)
-	`,
-		req.UserID,
-		req.Resi,
-		req.NamaBarang,
-		req.Berat,
-		req.Dimensi,
-		req.Jenis,
-		req.AlamatPengirim,
-		req.AlamatPenerima,
-		req.Status,
-		req.ETA,
-	)
-
-	if err != nil {
-		return Order{}, err
-	}
-
-	nextID++
-
-	return req, nil
+	return User{}, nil
 }
+// func CreateOrder(req Order, token string, v Validator) (Order, error) {
+
+// 	if req.Berat <= 0 {
+// 		return Order{}, errors.New("invalid berat")
+// 	}
+
+// 	req.OrderID = nextID
+// 	req.Resi = GenerateResi()
+// 	req.Status = "created"
+// 	req.ETA = CalculateETA()
+
+// 	orders = append(orders, req)
+
+// 	// SIMPAN KE DATABASE
+// 	_, err := DB.Exec(`
+// 		INSERT INTO orders(
+// 			user_id,
+// 			resi,
+// 			nama_barang,
+// 			berat,
+// 			dimensi,
+// 			jenis,
+// 			alamat_pengirim,
+// 			alamat_penerima,
+// 			status,
+// 			eta
+// 		)
+// 		VALUES(?,?,?,?,?,?,?,?,?,?)
+// 	`,
+// 		req.UserID,
+// 		req.Resi,
+// 		req.NamaBarang,
+// 		req.Berat,
+// 		req.Dimensi,
+// 		req.Jenis,
+// 		req.AlamatPengirim,
+// 		req.AlamatPenerima,
+// 		req.Status,
+// 		req.ETA,
+// 	)
+
+// 	if err != nil {
+// 		return Order{}, err
+// 	}
+
+// 	nextID++
+
+// 	return req, nil
+// }
 
 func GetOrder(id int) *Order {
 
