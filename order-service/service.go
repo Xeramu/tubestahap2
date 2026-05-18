@@ -168,3 +168,129 @@
 // // func GetETA(id int) string {
 // // 	return ""
 // // }
+
+
+
+package main
+
+import (
+	"errors"
+	"fmt"
+	"net/http"
+	"time"
+)
+
+var orders []Order
+var nextID = 1
+
+var UserServiceURL = "http://user-service:8081"
+
+type Validator interface {
+	CheckUser(userID int, token string) bool
+}
+
+type RealValidator struct{}
+
+func (v RealValidator) CheckUser(userID int, token string) bool {
+
+	req, _ := http.NewRequest(
+		"GET",
+		fmt.Sprintf("%s/profile?id=%d", UserServiceURL, userID),
+		nil,
+	)
+
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	client := &http.Client{
+		Timeout: 3 * time.Second,
+	}
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		return false
+	}
+
+	return resp.StatusCode == 200
+}
+
+func GenerateResi() string {
+	return fmt.Sprintf("LNG-%d", time.Now().Unix())
+}
+
+func CalculateETA() string {
+	return "2 days"
+}
+
+func CreateOrder(req Order, token string, v Validator) (Order, error) {
+
+	if req.Berat <= 0 {
+		return Order{}, errors.New("invalid berat")
+	}
+
+	req.OrderID = nextID
+	req.Resi = GenerateResi()
+	req.Status = "created"
+	req.ETA = CalculateETA()
+
+	orders = append(orders, req)
+
+	// SIMPAN KE DATABASE
+	_, err := DB.Exec(`
+		INSERT INTO orders(
+			user_id,
+			resi,
+			nama_barang,
+			berat,
+			dimensi,
+			jenis,
+			alamat_pengirim,
+			alamat_penerima,
+			status,
+			eta
+		)
+		VALUES(?,?,?,?,?,?,?,?,?,?)
+	`,
+		req.UserID,
+		req.Resi,
+		req.NamaBarang,
+		req.Berat,
+		req.Dimensi,
+		req.Jenis,
+		req.AlamatPengirim,
+		req.AlamatPenerima,
+		req.Status,
+		req.ETA,
+	)
+
+	if err != nil {
+		return Order{}, err
+	}
+
+	nextID++
+
+	return req, nil
+}
+
+func GetOrder(id int) *Order {
+
+	for _, o := range orders {
+		if o.OrderID == id {
+			return &o
+		}
+	}
+
+	return nil
+}
+
+func UpdateOrderStatus(id int, status string) bool {
+
+	for i := range orders {
+		if orders[i].OrderID == id {
+			orders[i].Status = status
+			return true
+		}
+	}
+
+	return false
+}
