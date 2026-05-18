@@ -294,3 +294,7 @@ func UpdateOrderStatus(id int, status string) bool {
 
 	return false
 }
+
+func GetETA(id int) string {
+	return ""
+}
