@@ -112,29 +112,25 @@
 // 	return false
 // }
 
-package main
+// package main
 
-import "errors"
+// import "errors"
 
-var users []User
-var nextID = 1
+// var users []User
+// var nextID = 1
 
-func init() {
-	seed := User{
-		UserID:   nextID,
-		Name:     "seed",
-		Email:    "seed@mail.com",
-		Password: "hashed",
-		Role:     "customer",
-	}
+// func init() {
+// 	seed := User{
+// 		UserID:   nextID,
+// 		Name:     "seed",
+// 		Email:    "seed@mail.com",
+// 		Password: "hashed",
+// 		Role:     "customer",
+// 	}
 
-	users = append(users, seed)
-	nextID++
-}
-
-func Register(name, email, password, role string) (User, error) {
-	return User{}, nil
-}
+// 	users = append(users, seed)
+// 	nextID++
+// }
 
 // func Register(name, email, password, role string) (User, error) {
 
@@ -172,37 +168,71 @@ func Register(name, email, password, role string) (User, error) {
 // 	return u, nil
 // }
 
-func Login(email, password string) (string, error) {
+// func Login(email, password string) (string, error) {
 
-	for _, u := range users {
-		if u.Email == email && u.Password == password {
-			return "dummy-token", nil
-		}
+// 	for _, u := range users {
+// 		if u.Email == email && u.Password == password {
+// 			return "dummy-token", nil
+// 		}
+// 	}
+
+// 	return "", errors.New("invalid login")
+// }
+
+// func GetProfile(id int) *User {
+
+// 	for i := range users {
+// 		if users[i].UserID == id {
+// 			return &users[i]
+// 		}
+// 	}
+
+// 	return nil
+// }
+
+// func UpdateProfile(id int, alamat string, pref string) bool {
+
+// 	for i := range users {
+// 		if users[i].UserID == id {
+// 			users[i].Alamat = alamat
+// 			users[i].Preferensi = pref
+// 			return true
+// 		}
+// 	}
+
+// 	return false
+// }
+
+package main
+
+var users []User
+var nextID = 1
+
+func init() {
+	seed := User{
+		UserID:   nextID,
+		Name:     "seed",
+		Email:    "seed@mail.com",
+		Password: "hashed",
+		Role:     "customer",
 	}
 
-	return "", errors.New("invalid login")
+	users = append(users, seed)
+	nextID++
+}
+
+func Register(name, email, password, role string) (User, error) {
+	return User{}, nil
+}
+
+func Login(email, password string) (string, error) {
+	return "", nil
 }
 
 func GetProfile(id int) *User {
-
-	for i := range users {
-		if users[i].UserID == id {
-			return &users[i]
-		}
-	}
-
 	return nil
 }
 
 func UpdateProfile(id int, alamat string, pref string) bool {
-
-	for i := range users {
-		if users[i].UserID == id {
-			users[i].Alamat = alamat
-			users[i].Preferensi = pref
-			return true
-		}
-	}
-
 	return false
 }
