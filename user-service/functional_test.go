@@ -4,19 +4,55 @@ package main
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"testing"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql"
+)
+
+// ===============================
+// CONFIG
+// ===============================
+const (
+	dbUser = "root"
+	dbPass = "root"
+	dbHost = "mysql"
+	dbPort = "3306"
+	dbName = "tubesdb"
 )
 
 func TestUserFlow_Functional(t *testing.T) {
 
+	// ==================================
+	// 1. CEK DATABASE BISA DIAKSES
+	// ==================================
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
+		dbUser, dbPass, dbHost, dbPort, dbName)
+
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		t.Fatal("database tidak bisa diakses:", err)
+	}
+
+	t.Log("DATABASE CONNECTED")
+
+	// ==================================
+	// 2. CONNECT APP DATABASE
+	// ==================================
 	ConnectDB()
 
 	// ==================================
-	// START USER SERVICE
+	// 3. START USER SERVICE
 	// ==================================
 	go func() {
 
@@ -31,7 +67,7 @@ func TestUserFlow_Functional(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	// ==================================
-	// REGISTER
+	// 4. REGISTER
 	// ==================================
 	email := fmt.Sprintf(
 		"func%d@mail.com",
@@ -57,16 +93,16 @@ func TestUserFlow_Functional(t *testing.T) {
 
 	json.NewDecoder(respReg.Body).Decode(&reg)
 
-	t.Log("REGISTER RESPONSE:", reg)
-
 	if respReg.StatusCode != 200 {
-		t.Fatal("register failed")
+		t.Fatalf("register failed: %+v", reg)
 	}
 
 	userID := int(reg["user_id"].(float64))
 
+	t.Log("REGISTER SUCCESS")
+
 	// ==================================
-	// LOGIN
+	// 5. LOGIN
 	// ==================================
 	respLogin, err := http.Post(
 		"http://user-service:8081/login",
@@ -87,14 +123,14 @@ func TestUserFlow_Functional(t *testing.T) {
 
 	token := login["token"]
 
-	t.Log("TOKEN:", token)
-
 	if token == "" {
 		t.Fatal("login failed")
 	}
 
+	t.Log("LOGIN SUCCESS")
+
 	// ==================================
-	// GET PROFILE
+	// 6. GET PROFILE
 	// ==================================
 	reqProfile, _ := http.NewRequest(
 		"GET",
@@ -122,11 +158,30 @@ func TestUserFlow_Functional(t *testing.T) {
 
 	json.NewDecoder(respProfile.Body).Decode(&profile)
 
-	t.Log("PROFILE:", profile)
-
 	if respProfile.StatusCode != 200 {
-		t.Fatal("get profile failed")
+		t.Fatalf("get profile failed: %+v", profile)
 	}
 
+	t.Log("PROFILE SUCCESS")
+
+	// ==================================
+	// 7. CEK USER MASUK DATABASE
+	// ==================================
+	var count int
+
+	err = db.QueryRow(
+		"SELECT COUNT(*) FROM users WHERE user_id = ?",
+		userID,
+	).Scan(&count)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if count < 1 {
+		t.Fatal("user tidak masuk database")
+	}
+
+	t.Log("USER MASUK DATABASE")
 	t.Log("FUNCTIONAL TEST SUCCESS")
 }
