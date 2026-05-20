@@ -65,12 +65,19 @@ pipeline {
             }
         }
 
-        stage('8. Deploy Kubernetes') {
-            steps {
-                bat 'kubectl apply -f k8s/'
-            }
+        stage('Check Kubernetes') {
+        steps {
+            bat 'kubectl cluster-info'
+            bat 'kubectl get nodes'
         }
     }
+        
+    //     stage('8. Deploy Kubernetes') {
+    //         steps {
+    //             bat 'kubectl apply -f k8s/'
+    //         }
+    //     }
+    // }
 
     post {
         always {
