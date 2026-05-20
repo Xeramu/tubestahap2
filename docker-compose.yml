@@ -1,167 +1,46 @@
-pipeline {
-    agent any
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
 
-    environment {
-        DOCKER_USER = "umarx"
-    }
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: tubesdb
 
-    stages {
+    ports:
+      - "3306:3306"
 
-        // =========================
-        // 1. CHECKOUT
-        // =========================
-        stage('1. Checkout Repo') {
-            steps {
-                checkout scm
-            }
-        }
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-        // =========================
-        // 2. UNIT TEST
-        // =========================
-        stage('2. Unit Tests') {
-            steps {
+  user-service:
+    build: ./user-service
 
-                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                    bat 'cd user-service && go test -v'
-                }
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
 
-                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                    bat 'cd order-service && go test -v'
-                }
-            }
-        }
+    ports:
+      - "8081:8081"
 
-        // =========================
-        // 3. LINT / VET
-        // =========================
-        stage('3. Lint / Vet') {
-            steps {
+    depends_on:
+      mysql:
+        condition: service_healthy
 
-                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                    bat 'cd user-service && go vet ./...'
-                }
+  order-service:
+    build: ./order-service
 
-                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                    bat 'cd order-service && go vet ./...'
-                }
-            }
-        }
+    ports:
+      - "8083:8083"
 
-        // =========================
-        // 4. BUILD DOCKER IMAGE
-        // =========================
-        stage('4. Build Docker Images') {
-            steps {
-                bat 'docker compose build'
-            }
-        }
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
 
-        // =========================
-        // 5. FUNCTIONAL TEST
-        // =========================
-        stage('5. Functional Tests') {
-            steps {
-                script {
-
-                    // START CONTAINER
-                    bat 'docker compose up -d'
-
-                    // TUNGGU SERVICE READY
-                    powershell 'Start-Sleep -Seconds 20'
-
-                    // DEBUG
-                    bat 'docker compose ps'
-                    bat 'docker compose logs user-service'
-                    bat 'docker compose logs order-service'
-
-                    // USER SERVICE FUNCTIONAL TEST
-                    catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                        bat 'docker compose exec user-service go test -tags=functional -v'
-                    }
-
-                    // ORDER SERVICE FUNCTIONAL TEST
-                    catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                        bat 'docker compose exec order-service go test -tags=functional -v'
-                    }
-                }
-            }
-        }
-
-        // =========================
-        // 6. PUSH IMAGE
-        // =========================
-        stage('6. Push Images') {
-            steps {
-
-                // TAG IMAGE
-                bat 'docker tag tubestahap2-pipeline-user-service %DOCKER_USER%/user-service:latest'
-                bat 'docker tag tubestahap2-pipeline-order-service %DOCKER_USER%/order-service:latest'
-
-                // PUSH IMAGE
-                bat 'docker push %DOCKER_USER%/user-service:latest'
-                bat 'docker push %DOCKER_USER%/order-service:latest'
-            }
-        }
-
-        // =========================
-        // 7. DEPLOY KUBERNETES
-        // =========================
-        stage('7. Deploy Kubernetes') {
-            steps {
-
-                // OPTIONAL:
-                // kalau cluster belum aktif,
-                // stage ini akan unstable bukan fail
-
-                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                    bat 'kubectl apply -f k8s/ --validate=false'
-                }
-            }
-        }
-
-        // =========================
-        // 8. VERIFY
-        // =========================
-        stage('8. Verify') {
-            steps {
-
-                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                    bat 'kubectl get pods'
-                }
-
-                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                    bat 'kubectl get svc'
-                }
-
-                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                    bat 'kubectl get deployments'
-                }
-            }
-        }
-    }
-
-    // =========================
-    // POST
-    // =========================
-    post {
-
-        always {
-
-            // STOP CONTAINER
-            bat 'docker compose down || exit 0'
-        }
-
-        success {
-            echo "PIPELINE SUCCESS"
-        }
-
-        unstable {
-            echo "PIPELINE UNSTABLE"
-        }
-
-        failure {
-            echo "PIPELINE FAILED"
-        }
-    }
-}
+    depends_on:
+      mysql:
+        condition: service_healthy
