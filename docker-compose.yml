@@ -1,4 +1,7 @@
+version: '3.9'
+
 services:
+
   mysql:
     image: mysql:8.0
     container_name: mysql
@@ -6,23 +9,23 @@ services:
 
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: tubesdb
+      MYSQL_DATABASE: appdb
 
     ports:
       - "3306:3306"
 
+    command: --default-authentication-plugin=mysql_native_password
+
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -proot"]
+      interval: 10s
+      timeout: 30s
+      retries: 20
+      start_period: 40s
 
   user-service:
-    build: ./user-service
-
-    environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
+    build:
+      context: ./user-service
 
     ports:
       - "8081:8081"
@@ -31,16 +34,27 @@ services:
       mysql:
         condition: service_healthy
 
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: appdb
+
   order-service:
-    build: ./order-service
+    build:
+      context: ./order-service
 
     ports:
       - "8083:8083"
 
-    environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
-
     depends_on:
       mysql:
         condition: service_healthy
+
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: appdb
