@@ -72,11 +72,11 @@ pipeline {
         }
     }
         
-        // stage('8. Deploy Kubernetes') {
-        //     steps {
-        //         bat 'kubectl apply -f k8s/'
-        //     }
-        // }
+        stage('8. Deploy Kubernetes') {
+            steps {
+                bat 'kubectl apply -f k8s/'
+            }
+        }
     }
 
     post {
