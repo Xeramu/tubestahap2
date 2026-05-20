@@ -74,7 +74,7 @@ pipeline {
                     '''
 
                     powershell '''
-                    Start-Sleep -Seconds 30
+                    Start-Sleep -Seconds 60
                     '''
 
                     bat '''
@@ -99,6 +99,10 @@ pipeline {
         }
 
         stage('6. Push Images') {
+            when {
+                expression { currentBuild.currentResult != 'FAILURE' }
+            }
+
             steps {
 
                 bat '''
@@ -121,6 +125,10 @@ pipeline {
         }
 
         stage('7. Deploy Kubernetes') {
+            when {
+                expression { currentBuild.currentResult != 'FAILURE' }
+            }
+
             steps {
 
                 bat '''
@@ -131,6 +139,10 @@ pipeline {
         }
 
         stage('8. Verify') {
+            when {
+                expression { currentBuild.currentResult != 'FAILURE' }
+            }
+
             steps {
 
                 bat '''
@@ -158,6 +170,10 @@ pipeline {
 
         success {
             echo 'PIPELINE SUCCESS'
+        }
+
+        unstable {
+            echo 'PIPELINE UNSTABLE'
         }
 
         failure {
