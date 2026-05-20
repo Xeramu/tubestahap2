@@ -9,7 +9,7 @@ services:
 
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: appdb
+      MYSQL_DATABASE: tubesdb
 
     ports:
       - "3306:3306"
@@ -39,7 +39,7 @@ services:
       DB_PORT: 3306
       DB_USER: root
       DB_PASSWORD: root
-      DB_NAME: appdb
+      DB_NAME: tubesdb
 
   order-service:
     build:
@@ -57,4 +57,4 @@ services:
       DB_PORT: 3306
       DB_USER: root
       DB_PASSWORD: root
-      DB_NAME: appdb
+      DB_NAME: tubesdb
